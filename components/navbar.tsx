@@ -8,25 +8,23 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Search, User, Heart, BookOpen, Plus, Home } from "lucide-react"
+import { Search, User, Heart, BookOpen, Plus, Home, Shield } from "lucide-react"
+import { useAuth } from "@/components/auth-provider"
 
-interface NavbarProps {
-  user?: {
-    id: number
-    username: string
-    email: string
-  } | null
-}
-
-export default function Navbar({ user }: NavbarProps) {
+export default function Navbar() {
   const [searchTerm, setSearchTerm] = useState("")
   const router = useRouter()
+  const { user, logout } = useAuth()
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     if (searchTerm.trim()) {
       router.push(`/search?q=${encodeURIComponent(searchTerm)}`)
     }
+  }
+
+  const handleLogout = () => {
+    logout()
   }
 
   return (
@@ -102,9 +100,15 @@ export default function Navbar({ user }: NavbarProps) {
                   <DropdownMenuItem>
                     <Link href="/collections">Mes collections</Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Link href="/logout">Se déconnecter</Link>
-                  </DropdownMenuItem>
+                  {user.is_admin && (
+                    <DropdownMenuItem>
+                      <Link href="/admin" className="flex items-center gap-2">
+                        <Shield size={16} />
+                        Administration
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onClick={handleLogout}>Se déconnecter</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (

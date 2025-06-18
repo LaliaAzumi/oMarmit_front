@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Eye, EyeOff, Mail, Lock, User } from "lucide-react"
+import { authAPI } from "@/lib/api"
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -49,29 +50,18 @@ export default function RegisterPage() {
     }
 
     try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: formData.username,
-          email: formData.email,
-          password: formData.password,
-          bio: formData.bio,
-          dietaryRestrictions: formData.dietaryRestrictions,
-        }),
+      await authAPI.register({
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        bio: formData.bio,
+        dietaryRestrictions: formData.dietaryRestrictions,
       })
 
-      const data = await response.json()
-
-      if (response.ok) {
-        router.push("/login?message=Compte créé avec succès")
-      } else {
-        setError(data.message || "Erreur lors de la création du compte")
-      }
-    } catch (error) {
-      setError("Erreur de connexion au serveur")
+      // Rediriger vers la page de connexion avec un message de succès
+      router.push("/login?success=Compte créé avec succès ! Vous pouvez maintenant vous connecter.")
+    } catch (error: any) {
+      setError(error.response?.data?.message || "Erreur lors de la création du compte")
     } finally {
       setIsLoading(false)
     }
