@@ -8,7 +8,8 @@ import RecipeCard from "@/components/recipe-card"
 import AdvancedSearch from "@/components/advanced-search"
 import { Button } from "@/components/ui/button"
 import { Filter, Search } from "lucide-react"
-import { recipesAPI, authAPI } from "@/lib/api"
+import { recipesAPI } from "@/lib/api"
+import { useAuth } from "@/components/auth-provider"
 
 interface Recipe {
   ID_RECETTE: number
@@ -29,30 +30,27 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  const [user, setUser] = useState(null)
   const [favorites, setFavorites] = useState<number[]>([])
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false)
 
   const searchParams = useSearchParams()
+  const { user } = useAuth()
 
   useEffect(() => {
     fetchRecipes()
-    fetchUser()
   }, [searchParams, currentPage])
 
-  const fetchUser = async () => {
-    try {
-      const userData = await authAPI.getCurrentUser()
-      setUser(userData)
-      fetchFavorites(userData.id)
-    } catch (error) {
-      console.log("Utilisateur non connecté")
+  useEffect(() => {
+    if (user) {
+      fetchFavorites()
     }
-  }
+  }, [user])
 
-  const fetchFavorites = async (userId: number) => {
+  const fetchFavorites = async () => {
+    if (!user) return
+
     try {
-      const data = await recipesAPI.getUserFavorites(userId)
+      const data = await recipesAPI.getUserFavorites(user.id)
       setFavorites(data.map((fav: any) => fav.ID_RECETTE))
     } catch (error) {
       console.error("Erreur lors du chargement des favoris:", error)

@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Eye, EyeOff, Mail, Lock } from "lucide-react"
+import { authAPI } from "@/lib/api"
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -22,29 +23,32 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const successMessage = urlParams.get("success")
+    if (successMessage) {
+      // Vous pouvez afficher le message de succès ici
+      console.log(successMessage)
+    }
+  }, [])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError("")
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      })
+      const data = await authAPI.login(formData.email, formData.password)
 
-      const data = await response.json()
+      // Stocker le token et les informations utilisateur
+      localStorage.setItem("token", data.token)
+      localStorage.setItem("user", JSON.stringify(data.user))
 
-      if (response.ok) {
-        router.push("/")
-      } else {
-        setError(data.message || "Erreur de connexion")
-      }
-    } catch (error) {
-      setError("Erreur de connexion au serveur")
+      // Rediriger vers la page d'accueil
+      router.push("/")
+      router.refresh()
+    } catch (error: any) {
+      setError(error.response?.data?.message || "Erreur de connexion")
     } finally {
       setIsLoading(false)
     }
@@ -70,6 +74,15 @@ export default function LoginPage() {
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            {/* Ajouter ceci pour le message de succès */}
+            {typeof window !== "undefined" && new URLSearchParams(window.location.search).get("success") && (
+              <Alert className="border-green-200 bg-green-50">
+                <AlertDescription className="text-green-800">
+                  {new URLSearchParams(window.location.search).get("success")}
+                </AlertDescription>
               </Alert>
             )}
 
