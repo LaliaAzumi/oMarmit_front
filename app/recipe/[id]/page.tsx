@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Heart, Clock, Users, ChefHat, Utensils, Plus, Minus } from "lucide-react"
-
+import { recipesAPI } from "@/lib/api"
 interface Recipe {
   ID_RECETTE: number
   TITRE: string
@@ -60,23 +60,20 @@ export default function RecipeDetailPage() {
   }
 
   const fetchRecipe = async () => {
-    try {
-      const response = await fetch(`/api/recipes/${params.id}`)
-      if (response.ok) {
-        const data = await response.json()
-        setRecipe(data)
-        generateNutritionInfo(data)
-      }
-    } catch (error) {
-      console.error("Erreur lors du chargement de la recette:", error)
-    } finally {
-      setLoading(false)
-    }
+  try {
+    const data = await recipesAPI.getRecipe(Number(params.id))
+    setRecipe(data)
+    generateNutritionInfo(data)
+  } catch (error) {
+    console.error("Erreur lors du chargement de la recette:", error)
+  } finally {
+    setLoading(false)
   }
+}
 
   const checkFavoriteStatus = async (userId: number) => {
     try {
-      const response = await fetch(`/api/recipes/${params.id}/favorite-status?userId=${userId}`)
+      const response = await fetch(`/api/recipe/${params.id}/favorite-status?userId=${userId}`)
       if (response.ok) {
         const data = await response.json()
         setIsFavorite(data.isFavorite)
@@ -113,7 +110,7 @@ export default function RecipeDetailPage() {
 
     try {
       const method = isFavorite ? "DELETE" : "POST"
-      const response = await fetch(`/api/recipes/${params.id}/favorite`, {
+      const response = await fetch(`/api/recipe/${params.id}/favorite`, {
         method,
         headers: {
           "Content-Type": "application/json",
