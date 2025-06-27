@@ -6,39 +6,26 @@ import Navbar from "@/components/navbar"
 import CategoryNav from "@/components/category-nav"
 import RecipeCard from "@/components/recipe-card"
 import AdvancedSearch from "@/components/advanced-search"
+import APIStatus from "@/components/api-status"
 import { Button } from "@/components/ui/button"
 import { Filter, Search } from "lucide-react"
-import { recipesAPI } from "@/lib/api"
+import { useRecipes } from "@/hooks/use-api"
 import { useAuth } from "@/components/auth-provider"
-
-interface Recipe {
-  ID_RECETTE: number
-  TITRE: string
-  DESCRIPTION: string
-  IMAGE: string
-  temps_preparation: number
-  temps_cuisson: number
-  difficulte: string
-  regime_alimentaire: string
-  note_moyenne?: number
-  nombre_notes?: number
-  calories?: number
-}
+import { recipesAPI, usersAPI } from "@/lib/api"
 
 export default function HomePage() {
-  const [recipes, setRecipes] = useState<Recipe[]>([])
-  const [loading, setLoading] = useState(true)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
   const [favorites, setFavorites] = useState<number[]>([])
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false)
 
   const searchParams = useSearchParams()
   const { user } = useAuth()
+  const { recipes, totalPages, currentPage, loading, error, fetchRecipes, addToFavorites, removeFromFavorites } =
+    useRecipes()
 
   useEffect(() => {
-    fetchRecipes()
-  }, [searchParams, currentPage])
+    const params = Object.fromEntries(searchParams.entries())
+    fetchRecipes(params)
+  }, [searchParams])
 
   useEffect(() => {
     if (user) {
@@ -50,27 +37,10 @@ export default function HomePage() {
     if (!user) return
 
     try {
-      const data = await recipesAPI.getUserFavorites(user.id)
+      const data = await usersAPI.getUserFavorites(user.id)
       setFavorites(data.map((fav: any) => fav.ID_RECETTE))
     } catch (error) {
       console.error("Erreur lors du chargement des favoris:", error)
-    }
-  }
-
-  const fetchRecipes = async () => {
-    setLoading(true)
-    try {
-      const params = Object.fromEntries(searchParams.entries())
-      params.page = currentPage.toString()
-
-      const data = await recipesAPI.getRecipes(params)
-      setRecipes(data.recipes || [])
-      setTotalPages(data.totalPages || 1)
-    } catch (error) {
-      console.error("Erreur lors du chargement des recettes:", error)
-      setRecipes([])
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -110,7 +80,12 @@ export default function HomePage() {
           key={i}
           variant={i === currentPage ? "default" : "outline"}
           size="sm"
-          onClick={() => setCurrentPage(i)}
+          onClick={() => {
+            const params = new URLSearchParams(searchParams.toString())
+            params.set("page", i.toString())
+            window.history.pushState(null, "", `?${params.toString()}`)
+            fetchRecipes(Object.fromEntries(params.entries()))
+          }}
           className={i === currentPage ? "btn-primary-custom" : ""}
         >
           {i}
@@ -123,7 +98,13 @@ export default function HomePage() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+          onClick={() => {
+            const newPage = Math.max(1, currentPage - 1)
+            const params = new URLSearchParams(searchParams.toString())
+            params.set("page", newPage.toString())
+            window.history.pushState(null, "", `?${params.toString()}`)
+            fetchRecipes(Object.fromEntries(params.entries()))
+          }}
           disabled={currentPage === 1}
         >
           Précédent
@@ -132,7 +113,13 @@ export default function HomePage() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+          onClick={() => {
+            const newPage = Math.min(totalPages, currentPage + 1)
+            const params = new URLSearchParams(searchParams.toString())
+            params.set("page", newPage.toString())
+            window.history.pushState(null, "", `?${params.toString()}`)
+            fetchRecipes(Object.fromEntries(params.entries()))
+          }}
           disabled={currentPage === totalPages}
         >
           Suivant
@@ -143,10 +130,13 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen">
-      <Navbar user={user} />
+      <Navbar />
       <CategoryNav />
 
       <div className="container mx-auto px-4 py-6">
+        {/* Statut de l'API */}
+        <APIStatus />
+
         {/* Barre de recherche avancée */}
         <div className="flex justify-center mb-6">
           <Button onClick={() => setShowAdvancedSearch(true)} className="btn-secondary-custom flex items-center gap-2">
@@ -154,6 +144,9 @@ export default function HomePage() {
             Recherche Avancée
           </Button>
         </div>
+
+        {/* Affichage des erreurs */}
+        {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
 
         {/* Résultats */}
         {loading ? (
