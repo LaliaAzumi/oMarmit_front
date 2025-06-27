@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Star, MessageCircle } from "lucide-react"
+import { recipesAPI } from "@/lib/api"
 
 interface Rating {
   ID_NOTE: number
@@ -45,13 +46,10 @@ export default function RatingSystem({ recipeId, user, averageRating = 0, totalR
 
   const fetchRatingsAndComments = async () => {
     try {
-      const [ratingsRes, commentsRes] = await Promise.all([
-        fetch(`/api/recipes/${recipeId}/ratings`),
-        fetch(`/api/recipes/${recipeId}/comments`),
+      const [ratingsData, commentsData] = await Promise.all([
+        recipesAPI.getRecipeRatings(recipeId),
+        recipesAPI.getComments(recipeId),
       ])
-
-      const ratingsData = await ratingsRes.json()
-      const commentsData = await commentsRes.json()
 
       setRatings(ratingsData)
       setComments(commentsData)
@@ -62,11 +60,8 @@ export default function RatingSystem({ recipeId, user, averageRating = 0, totalR
 
   const fetchUserRating = async () => {
     try {
-      const response = await fetch(`/api/recipes/${recipeId}/user-rating`)
-      if (response.ok) {
-        const data = await response.json()
-        setUserRating(data.rating || 0)
-      }
+      const data = await recipesAPI.getUserRating(recipeId)
+      setUserRating(data.rating || 0)
     } catch (error) {
       console.error("Erreur lors du chargement de la note utilisateur:", error)
     }
@@ -76,18 +71,9 @@ export default function RatingSystem({ recipeId, user, averageRating = 0, totalR
     if (!user) return
 
     try {
-      const response = await fetch(`/api/recipes/${recipeId}/rate`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ rating }),
-      })
-
-      if (response.ok) {
-        setUserRating(rating)
-        fetchRatingsAndComments()
-      }
+      await recipesAPI.rateRecipe(recipeId, rating)
+      setUserRating(rating)
+      fetchRatingsAndComments()
     } catch (error) {
       console.error("Erreur lors de la soumission de la note:", error)
     }
@@ -98,18 +84,9 @@ export default function RatingSystem({ recipeId, user, averageRating = 0, totalR
 
     setIsSubmitting(true)
     try {
-      const response = await fetch(`/api/recipes/${recipeId}/comment`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ content: comment }),
-      })
-
-      if (response.ok) {
-        setComment("")
-        fetchRatingsAndComments()
-      }
+      await recipesAPI.addComment(recipeId, comment)
+      setComment("")
+      fetchRatingsAndComments()
     } catch (error) {
       console.error("Erreur lors de la soumission du commentaire:", error)
     } finally {

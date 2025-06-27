@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Heart, Clock, Users, ChefHat, Utensils, Plus, Minus } from "lucide-react"
-import { recipesAPI } from "@/lib/api"
+import { recipesAPI, nutritionAPI } from "@/lib/api"
+
 interface Recipe {
   ID_RECETTE: number
   TITRE: string
@@ -60,24 +61,21 @@ export default function RecipeDetailPage() {
   }
 
   const fetchRecipe = async () => {
-  try {
-    const data = await recipesAPI.getRecipe(Number(params.id))
-    setRecipe(data)
-    generateNutritionInfo(data)
-  } catch (error) {
-    console.error("Erreur lors du chargement de la recette:", error)
-  } finally {
-    setLoading(false)
+    try {
+      const data = await recipesAPI.getRecipe(Number(params.id))
+      setRecipe(data)
+      generateNutritionInfo(data)
+    } catch (error) {
+      console.error("Erreur lors du chargement de la recette:", error)
+    } finally {
+      setLoading(false)
+    }
   }
-}
 
   const checkFavoriteStatus = async (userId: number) => {
     try {
-      const response = await fetch(`/api/recipe/${params.id}/favorite-status?userId=${userId}`)
-      if (response.ok) {
-        const data = await response.json()
-        setIsFavorite(data.isFavorite)
-      }
+      const data = await recipesAPI.getFavoriteStatus(Number(params.id))
+      setIsFavorite(data.isFavorite)
     } catch (error) {
       console.error("Erreur lors de la vérification des favoris:", error)
     }
@@ -85,21 +83,8 @@ export default function RecipeDetailPage() {
 
   const generateNutritionInfo = async (recipeData: Recipe) => {
     try {
-      const response = await fetch("/api/nutrition/analyze", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ingredients: recipeData.INGREDIENTS,
-          portions: portions,
-        }),
-      })
-
-      if (response.ok) {
-        const nutritionData = await response.json()
-        setNutritionInfo(nutritionData)
-      }
+      const nutritionData = await nutritionAPI.analyzeIngredients(recipeData.INGREDIENTS, portions)
+      setNutritionInfo(nutritionData)
     } catch (error) {
       console.error("Erreur lors de l'analyse nutritionnelle:", error)
     }
@@ -109,17 +94,12 @@ export default function RecipeDetailPage() {
     if (!user) return
 
     try {
-      const method = isFavorite ? "DELETE" : "POST"
-      const response = await fetch(`/api/recipe/${params.id}/favorite`, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
-
-      if (response.ok) {
-        setIsFavorite(!isFavorite)
+      if (isFavorite) {
+        await recipesAPI.removeFromFavorites(Number(params.id))
+      } else {
+        await recipesAPI.addToFavorites(Number(params.id))
       }
+      setIsFavorite(!isFavorite)
     } catch (error) {
       console.error("Erreur lors de la gestion des favoris:", error)
     }
