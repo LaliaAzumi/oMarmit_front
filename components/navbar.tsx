@@ -95,7 +95,7 @@ export default function Navbar() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="bg-white">
                   <DropdownMenuItem>
-                    <Link href="/profile">Profil</Link>
+                    <Link href="/profil">Profil</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem>
                     <Link href="/collections">Mes collections</Link>
