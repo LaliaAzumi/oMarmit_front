@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button"
 import { Filter, Search } from "lucide-react"
 import { useRecipes } from "@/hooks/use-api"
 import { useAuth } from "@/components/auth-provider"
-import { recipesAPI, usersAPI } from "@/lib/api"
+import { recipesAPI } from "@/lib/api/recipes"
+import { usersAPI } from "@/lib/api/users"
 
 export default function HomePage() {
   const [favorites, setFavorites] = useState<number[]>([])

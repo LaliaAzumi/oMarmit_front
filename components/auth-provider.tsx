@@ -12,6 +12,7 @@ interface User {
   is_admin: boolean
   bio?: string
   regime_alimentaire?: string[]
+  date_inscription: string
 }
 
 interface AuthContextType {

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { useToast } from "@/hooks/use-toast"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,14 +11,24 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { User, Mail, Calendar, Edit, Save, X } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
+import { usersAPI,type UserProfile } from "@/lib/api/users"
 import ProtectedRoute from "@/components/protected-route"
 import Navbar from "@/components/navbar"
 import { Camera, Shield } from "lucide-react"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
+function formatDateOnly(date: Date | string): string {
+  const dateObj = typeof date === "string" ? new Date(date) : date
+  return dateObj.toLocaleDateString("fr-FR")
+}
+
 export default function ProfilePage() {
   const { user } = useAuth()
+  const { toast } =useToast()
+  const [profile, setProfile] = useState<UserProfile | null>(null)
   const [isEditing, setIsEditing] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [formData, setFormData] = useState({
@@ -25,19 +36,38 @@ export default function ProfilePage() {
     email: "",
     bio: "",
     regime_alimentaire: [] as string[],
+    date_inscription: "",
   })
 
   useEffect(() => {
     if (user) {
-      setFormData({
-        username: user.username || "",
-        email: user.email || "",
-        bio: user.bio || "",
-        regime_alimentaire: user.regime_alimentaire || [],
-        
-      })
+      loadProfile()
     }
   }, [user])
+  const loadProfile = async () => {
+    if (!user?.id) return
+
+    try {
+      setIsLoading(true)
+      const profileData = await usersAPI.getUserProfile(user.id)
+      setProfile(profileData)
+      setFormData({
+        username: profileData.username || "",
+        bio: profileData.bio || "",
+        email: profileData.email || "",
+        regime_alimentaire: user.regime_alimentaire || [],
+        date_inscription:user.date_inscription ||"",
+      })
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger le profil",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
@@ -55,10 +85,33 @@ export default function ProfilePage() {
   }
 
   const handleSave = async () => {
-    // Ici vous pouvez ajouter la logique pour sauvegarder les modifications
-    
-    console.log("Sauvegarde des modifications:", formData)
-    setIsEditing(false)
+    if (!user?.id) return
+
+    try {
+      setIsLoading(true)
+      const updateData = {
+        username: formData.username,
+        bio: formData.bio,
+        email: formData.email,
+        regime_alimentaire: formData.regime_alimentaire,
+      }
+      await usersAPI.updateUserProfile(user.id, updateData)
+      toast({
+        title: "Succès",
+        description: "Profil mis à jour avec succès",
+      })
+
+      setIsEditing(false)
+    } catch (error) {
+      console.error("Erreur lors de la sauvegarde:", error)
+      toast({
+        title: "Erreur",
+        description: "Impossible de mettre à jour le profil",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleCancel = () => {
@@ -68,10 +121,12 @@ export default function ProfilePage() {
         email: user.email || "",
         bio: user.bio || "",
         regime_alimentaire: user.regime_alimentaire || [],
+        date_inscription : user.date_inscription || "",
       })
     }
     setIsEditing(false)
   }
+  const registrationDate = user?.date_inscription ? new Date(user?.date_inscription) : null
 
   return (
     <ProtectedRoute>
@@ -305,7 +360,7 @@ export default function ProfilePage() {
                     <div className="flex items-center gap-3 mb-3">
                       <Calendar size={18} className="text-amber-600" />
                       <span className="text-gray-700 font-medium">
-                        Membre depuis le {new Date().toLocaleDateString("fr-FR")}
+                        Membre depuis le {registrationDate ? formatDateOnly(registrationDate) : "Date inconnue"}
                       </span>
                     </div>
                     {user?.is_admin && (
