@@ -8,12 +8,14 @@ import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useAuth } from "@/components/auth-provider"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Eye, EyeOff, Mail, Lock } from "lucide-react"
 import { authAPI } from "@/lib/api"
 
 export default function LoginPage() {
+  const { login } = useAuth() 
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -38,15 +40,8 @@ export default function LoginPage() {
     setError("")
 
     try {
-      const data = await authAPI.login(formData.email, formData.password)
-
-      // Stocker le token et les informations utilisateur
-      localStorage.setItem("token", data.token)
-      localStorage.setItem("user", JSON.stringify(data.user))
-
-      // Rediriger vers la page d'accueil
-      router.push("/")
-      router.refresh()
+      await login(formData.email, formData.password) // 👈 suffit
+      router.push("/") // 
     } catch (error: any) {
       setError(error.response?.data?.message || "Erreur de connexion")
     } finally {
