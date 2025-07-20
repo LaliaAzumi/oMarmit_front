@@ -1,14 +1,19 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Search, User, Heart, BookOpen, Plus, Home, Shield } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Search, User, Heart, BookOpen, Home, Shield, LogOut, ChefHat, Settings } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
 
 export default function Navbar() {
@@ -29,9 +34,13 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="navbar-custom text-white p-4">
+      <nav className="navbar-custom text-white p-4 shadow-md">
         <div className="container mx-auto flex items-center justify-between">
-          <Link href="/" className="text-2xl font-bold text-white hover:text-yellow-300 transition-colors">
+          <Link
+            href="/"
+            className="text-2xl font-bold text-white hover:text-yellow-300 transition-colors flex items-center gap-2"
+          >
+            <ChefHat size={24} />
             Ô'Marmit
           </Link>
 
@@ -40,35 +49,6 @@ export default function Navbar() {
               <Home size={18} />
               Accueil
             </Link>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger className="text-white hover:text-yellow-300 transition-colors flex items-center gap-2">
-                <BookOpen size={18} />
-                Menu
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-white">
-                <DropdownMenuItem>
-                  <Link href="/recipes" className="flex items-center gap-2">
-                    <BookOpen size={16} />
-                    Voir les recettes
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Link href="/add-recipe" className="flex items-center gap-2">
-                    <Plus size={16} />
-                    Ajouter une recette
-                  </Link>
-                </DropdownMenuItem>
-                {user && (
-                  <DropdownMenuItem>
-                    <Link href="/favorites" className="flex items-center gap-2">
-                      <Heart size={16} />
-                      Mes favoris
-                    </Link>
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
 
           <div className="flex items-center space-x-4">
@@ -93,22 +73,51 @@ export default function Navbar() {
                   <User size={18} />
                   {user.username}
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="bg-white">
+                <DropdownMenuContent className="bg-white w-48">
                   <DropdownMenuItem>
-                    <Link href="/profil">Profil</Link>
+                    <Link href="/profil" className="flex items-center gap-2 w-full">
+                      <User size={16} />
+                      Profil
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem>
-                    <Link href="/collections">Mes collections</Link>
+                    <Link href="/my-recipes" className="flex items-center gap-2 w-full">
+                      <ChefHat size={16} />
+                      Mes recettes
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Link href="/favorites" className="flex items-center gap-2 w-full">
+                      <Heart size={16} />
+                      Favoris
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Link href="/collections" className="flex items-center gap-2 w-full">
+                      <BookOpen size={16} />
+                      Collections
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    <Link href="/settings" className="flex items-center gap-2 w-full">
+                      <Settings size={16} />
+                      Paramètres
+                    </Link>
                   </DropdownMenuItem>
                   {user.is_admin && (
                     <DropdownMenuItem>
-                      <Link href="/admin" className="flex items-center gap-2">
+                      <Link href="/admin" className="flex items-center gap-2 w-full">
                         <Shield size={16} />
                         Administration
                       </Link>
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuItem onClick={handleLogout}>Se déconnecter</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-600 hover:bg-red-50 cursor-pointer">
+                    <LogOut size={16} className="mr-2" />
+                    Se déconnecter
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (

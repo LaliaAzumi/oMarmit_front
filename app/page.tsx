@@ -5,28 +5,34 @@ import { useSearchParams } from "next/navigation"
 import Navbar from "@/components/navbar"
 import CategoryNav from "@/components/category-nav"
 import RecipeCard from "@/components/recipe-card"
+import RecipePublisher from "@/components/recipe-publisher"
 import AdvancedSearch from "@/components/advanced-search"
 import APIStatus from "@/components/api-status"
 import { Button } from "@/components/ui/button"
-import { Filter, Search } from "lucide-react"
+import { Filter, Search, TrendingUp, Clock, Star } from "lucide-react"
 import { useRecipes } from "@/hooks/use-api"
 import { useAuth } from "@/components/auth-provider"
-import { recipesAPI } from "@/lib/api/recipes"
-import { usersAPI } from "@/lib/api/users"
+import { recipesAPI, usersAPI } from "@/lib/api"
 
 export default function HomePage() {
   const [favorites, setFavorites] = useState<number[]>([])
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false)
+  const [activeTab, setActiveTab] = useState<"recent" | "trending" | "favorites">("recent")
 
   const searchParams = useSearchParams()
   const { user } = useAuth()
-  const { recipes, totalPages, currentPage, loading, error, fetchRecipes, addToFavorites, removeFromFavorites } =
-    useRecipes()
+  const { recipes, totalPages, currentPage, loading, error, fetchRecipes } = useRecipes()
 
   useEffect(() => {
     const params = Object.fromEntries(searchParams.entries())
+    // Ajouter le tri selon l'onglet actif
+    if (activeTab === "trending") {
+      params.sort = "rating"
+    } else if (activeTab === "recent") {
+      params.sort = "created_at"
+    }
     fetchRecipes(params)
-  }, [searchParams])
+  }, [searchParams, activeTab])
 
   useEffect(() => {
     if (user) {
@@ -130,16 +136,51 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
       <CategoryNav />
 
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-6 py-6">
         {/* Statut de l'API */}
         <APIStatus />
 
-        {/* Barre de recherche avancée */}
-        <div className="flex justify-center mb-6">
+        {/* Composant de publication de recette */}
+        <RecipePublisher />
+
+        {/* Onglets de navigation */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-1 bg-white rounded-lg p-1 shadow-sm">
+            <Button
+              variant={activeTab === "recent" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setActiveTab("recent")}
+              className="flex items-center gap-2"
+            >
+              <Clock size={16} />
+              Récentes
+            </Button>
+            <Button
+              variant={activeTab === "trending" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setActiveTab("trending")}
+              className="flex items-center gap-2"
+            >
+              <TrendingUp size={16} />
+              Populaires
+            </Button>
+            {user && (
+              <Button
+                variant={activeTab === "favorites" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setActiveTab("favorites")}
+                className="flex items-center gap-2"
+              >
+                <Star size={16} />
+                Mes favoris
+              </Button>
+            )}
+          </div>
+
           <Button onClick={() => setShowAdvancedSearch(true)} className="btn-secondary-custom flex items-center gap-2">
             <Filter size={16} />
             Recherche Avancée
@@ -156,7 +197,7 @@ export default function HomePage() {
           </div>
         ) : recipes.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-items-center">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {recipes.map((recipe) => (
                 <RecipeCard
                   key={recipe.ID_RECETTE}
@@ -170,10 +211,21 @@ export default function HomePage() {
             {renderPagination()}
           </>
         ) : (
-          <div className="text-center py-12">
+          <div className="text-center py-12 bg-white rounded-lg shadow-sm">
             <Search size={48} className="mx-auto text-gray-400 mb-4" />
-            <h3 className="text-xl font-semibold mb-2">Aucune recette trouvée</h3>
-            <p className="text-gray-600">Essayez de modifier vos critères de recherche ou explorez nos catégories.</p>
+            <h3 className="text-xl font-semibold mb-2">
+              {activeTab === "favorites" ? "Aucun favori pour le moment" : "Aucune recette trouvée"}
+            </h3>
+            <p className="text-gray-600 mb-4">
+              {activeTab === "favorites"
+                ? "Commencez à ajouter des recettes à vos favoris !"
+                : "Essayez de modifier vos critères de recherche ou explorez nos catégories."}
+            </p>
+            {activeTab === "favorites" && user && (
+              <Button onClick={() => setActiveTab("recent")} className="btn-primary-custom">
+                Découvrir des recettes
+              </Button>
+            )}
           </div>
         )}
       </div>
