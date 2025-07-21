@@ -202,9 +202,9 @@ export default function HomePage() {
                 <RecipeCard
                   key={recipe.ID_RECETTE}
                   recipe={recipe}
-                  isFavorite={favorites.includes(recipe.ID_RECETTE)}
-                  onToggleFavorite={toggleFavorite}
                   user={user}
+                  isFavorite={favorites.includes(recipe.ID_RECETTE)}
+                  onFavoriteToggle={toggleFavorite}
                 />
               ))}
             </div>
