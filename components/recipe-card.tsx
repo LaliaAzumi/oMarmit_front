@@ -23,10 +23,6 @@ interface Recipe {
   regime_alimentaire: string
 }
 
-interface User {
-  id: string
-  // Add other user properties if needed, e.g., name, email
-}
 
 interface RecipeCardProps {
   recipe: Recipe

@@ -15,13 +15,13 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs" // Import Tabs components
 import { Clock, Users, ChefHat, Plus, X, ImageIcon, Loader2, Info, ListOrdered, Utensils } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
-import { recipesAPI } from "@/lib/api"
+import { recipesAPI } from "@/lib/api/recipes"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 
 interface Ingredient {
   name: string
-  quantity: string
+  quantity?: string
   unit: string
 }
 
@@ -35,8 +35,8 @@ export default function RecipePublisher() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    prepTime: "",
-    cookTime: "",
+    prepTime: 0,
+    cookTime: 0,
     servings: "",
     difficulty: "",
     category: "",
@@ -116,8 +116,8 @@ export default function RecipePublisher() {
     setFormData({
       title: "",
       description: "",
-      prepTime: "",
-      cookTime: "",
+      prepTime: 0,
+      cookTime: 0,
       servings: "",
       difficulty: "",
       category: "",
@@ -131,79 +131,27 @@ export default function RecipePublisher() {
     setActiveTab("general") // Reset to first tab
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSubmissionError(null)
-
-    if (!user) {
-      toast({
-        title: "Erreur d'authentification",
-        description: "Vous devez être connecté pour publier une recette.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    if (!validateForm()) {
-      toast({
-        title: "Erreur de validation",
-        description: "Veuillez corriger les erreurs dans le formulaire.",
-        variant: "destructive",
-      })
-      // Optionally, navigate to the first tab with an error
-      if (
-        formErrors.title ||
-        formErrors.category ||
-        formErrors.prepTime ||
-        formErrors.cookTime ||
-        formErrors.servings
-      ) {
-        setActiveTab("general")
-      } else if (formErrors.ingredients) {
-        setActiveTab("ingredients")
-      } else if (formErrors.instructions) {
-        setActiveTab("instructions")
-      }
-      return
-    }
-
-    setIsLoading(true)
+  const handleSubmit = async () => {
     try {
-      const recipeFormData = new FormData()
-      recipeFormData.append("title", formData.title)
-      recipeFormData.append("description", formData.description)
-      recipeFormData.append("prepTime", formData.prepTime)
-      recipeFormData.append("cookTime", formData.cookTime)
-      recipeFormData.append("servings", formData.servings)
-      recipeFormData.append("difficulty", formData.difficulty)
-      recipeFormData.append("category", formData.category)
-      recipeFormData.append("ingredients", JSON.stringify(ingredients.filter((ing) => ing.name.trim())))
-      recipeFormData.append("instructions", JSON.stringify(instructions.filter((inst) => inst.trim())))
-      if (selectedImage) {
-        recipeFormData.append("image", selectedImage)
-      }
+      const response = await recipesAPI.createRecipe({
+        titre: formData.title,
+        description: formData.description,
+        temps_preparation: formData.prepTime,
+        temps_cuisson: formData.cookTime,
+        // servings: formData.servings,
+        difficulte: formData.difficulty,
+        categorie: formData.category,
+        image: selectedImage, // <-- c'est un File ou null
+        ingredients: ingredients.filter((ingredient) => ingredient.name.trim() !== ""),
+        instructions: instructions.filter((instruction) => instruction.trim() !== "")
+      });
 
-      await recipesAPI.createRecipe(recipeFormData)
-      toast({
-        title: "Recette publiée !",
-        description: "Votre recette a été ajoutée avec succès.",
-        variant: "default",
-      })
-      resetForm()
-      setIsOpen(false)
-      // router.refresh(); // Use router.refresh() in a real Next.js app to revalidate data
-    } catch (error: any) {
-      console.error("Erreur lors de la création de la recette:", error)
-      setSubmissionError(error.message || "Une erreur inattendue est survenue.")
-      toast({
-        title: "Erreur de publication",
-        description: error.message || "Impossible de publier la recette.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
+      console.log("Recette créée avec succès :", response);
+    } catch (error) {
+      console.error("Erreur lors de la création de la recette :", error);
     }
-  }
+  };
+
 
   if (!user) return null
 

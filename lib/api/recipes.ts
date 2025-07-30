@@ -21,12 +21,16 @@ export interface Recipe {
   ID_CATEGORIE: number
   DATE_CREATION: string
 }
-
+export interface Ingredient {
+  name: string
+  quantity?: string
+  unit: string
+}
 export interface CreateRecipeData {
   titre: string
   description: string
-  ingredients: string
-  instructions: string
+  ingredients: Ingredient[]
+  instructions: string[]
   id_categorie: number
   temps_preparation: number
   temps_cuisson: number
@@ -36,7 +40,7 @@ export interface CreateRecipeData {
   proteines?: number
   glucides?: number
   lipides?: number
-  image?: File
+  image?: File|null
 }
 
 export interface RecipesResponse {
